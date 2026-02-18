@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { jobsApi, type Job, type JobStatus } from "@/lib/api";
-import { ExternalLink, Star, RefreshCw, Search } from "lucide-react";
+import { ExternalLink, Star, RefreshCw, Search, CheckCircle, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { clsx } from "clsx";
 
@@ -29,6 +29,7 @@ export default function JobsPage() {
   const [locationFilter, setLocationFilter] = useState<"" | "Singapore" | "Sydney">("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [scrapeStatus, setScrapeStatus] = useState<"idle" | "queued" | "error">("idle");
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -51,6 +52,17 @@ export default function JobsPage() {
 
   const triggerScrape = useMutation({
     mutationFn: jobsApi.triggerScrape,
+    onSuccess: () => {
+      setScrapeStatus("queued");
+      // Refresh job list after a delay to pick up results as they land
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["jobs"] }), 15000);
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["jobs"] }), 45000);
+      setTimeout(() => setScrapeStatus("idle"), 8000);
+    },
+    onError: () => {
+      setScrapeStatus("error");
+      setTimeout(() => setScrapeStatus("idle"), 6000);
+    },
   });
 
   return (
@@ -63,12 +75,25 @@ export default function JobsPage() {
         <button
           className="btn-primary"
           onClick={() => triggerScrape.mutate()}
-          disabled={triggerScrape.isPending}
+          disabled={triggerScrape.isPending || scrapeStatus === "queued"}
         >
           <RefreshCw className={clsx("w-4 h-4", triggerScrape.isPending && "animate-spin")} />
-          Scrape Now
+          {triggerScrape.isPending ? "Queueing…" : scrapeStatus === "queued" ? "Scraping…" : "Scrape Now"}
         </button>
       </div>
+
+      {scrapeStatus === "queued" && (
+        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          Scrape queued — results will appear automatically. This usually takes 1–3 minutes.
+        </div>
+      )}
+      {scrapeStatus === "error" && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          Failed to queue scrape — check that the API and Celery worker are running.
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card flex flex-wrap gap-3 items-center">
