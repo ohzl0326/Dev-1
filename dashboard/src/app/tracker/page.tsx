@@ -27,6 +27,7 @@ const STAGE_LABELS: Record<ApplicationStage, string> = {
   declined: "Declined",
   rejected: "Rejected",
   ghosted: "Ghosted",
+  withdrawn: "Withdrawn",
 };
 
 const STAGE_COLORS: Partial<Record<ApplicationStage, string>> = {

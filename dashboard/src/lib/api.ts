@@ -23,7 +23,7 @@ export type OutreachStatus =
 export type ApplicationStage =
   | "preparing" | "submitted" | "screening" | "interview_1" | "interview_2"
   | "interview_3" | "assessment" | "reference" | "offer" | "negotiating"
-  | "accepted" | "declined" | "rejected" | "ghosted";
+  | "accepted" | "declined" | "rejected" | "ghosted" | "withdrawn";
 
 export type SuggestionType = "job" | "event" | "connection" | "action";
 
