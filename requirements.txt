@@ -1,0 +1,32 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# Database
+sqlalchemy==2.0.31
+asyncpg==0.29.0
+alembic==1.13.2
+psycopg2-binary==2.9.9
+
+# Settings
+pydantic==2.8.2
+pydantic-settings==2.3.4
+
+# HTTP / scraping
+httpx==0.27.0
+beautifulsoup4==4.12.3
+lxml==5.2.2
+playwright==1.45.0
+
+# Task queue
+celery==5.4.0
+redis==5.0.7
+
+# AI
+openai==1.35.13
+
+# Notifications
+# (httpx already included above for Telegram)
+
+# Utilities
+python-dateutil==2.9.0
