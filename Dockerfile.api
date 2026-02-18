@@ -8,14 +8,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     libxml2-dev \
     libxslt1-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+    curl
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers (Chromium only — needed for JS-heavy scrapers)
-RUN playwright install chromium --with-deps
+RUN playwright install chromium --with-deps \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY app/ ./app/
 
