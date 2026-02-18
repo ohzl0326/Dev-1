@@ -9,8 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers (Chromium only — needed for JS-heavy scrapers)
-RUN playwright install chromium --with-deps \
-    && rm -rf /var/lib/apt/lists/*
+RUN playwright install chromium --with-deps && rm -rf /var/lib/apt/lists/*
 
 COPY app/ ./app/
 
