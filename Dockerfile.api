@@ -2,14 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# System deps for lxml, psycopg2, Playwright
-RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev libxml2-dev libxslt1-dev curl
-
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (Chromium only — needed for JS-heavy scrapers)
-RUN playwright install chromium --with-deps && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libpq-dev libxml2-dev libxslt1-dev curl && pip install --no-cache-dir -r requirements.txt && playwright install chromium --with-deps && rm -rf /var/lib/apt/lists/*
 
 COPY app/ ./app/
 
