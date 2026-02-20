@@ -51,15 +51,12 @@ settings = Settings()
 # ---------------------------------------------------------------------------
 # USER GOAL PROFILE
 # ---------------------------------------------------------------------------
-# This is the core configuration that drives all matching, scoring, and
-# AI recommendations. Modify these values as your search evolves.
-# ---------------------------------------------------------------------------
 
 GOAL_PROFILE = {
     "name": "User",
     "current_role": "Institutional Client Onboarding Manager",
     "current_seniority": "Associate",
-    "years_experience": 5,  # ~2 years investment analyst + ~3 years current role
+    "years_experience": 5,
     "background": [
         "Investment analyst, private markets fund investments, institutional clients",
         "Institutional client onboarding and relationship management",
@@ -67,9 +64,9 @@ GOAL_PROFILE = {
         "Investment solution design and implementation",
         "Multi-stakeholder project management (internal teams + senior client contacts)",
     ],
-    "target_deadline": "2026-09-30",  # End of Q3 2026
-    "target_locations": ["Singapore", "Sydney", "Australia"],
-    "target_industries": ["Asset Management", "Fund Management", "Investment Management"],
+    "target_deadline": "2026-09-30",
+    "target_locations": ["London", "United Kingdom"],
+    "target_industries": ["Asset Management", "Fund Management", "Investment Management", "Banking"],
     "target_markets": ["Public Markets", "Private Markets", "Multi-Asset"],
 }
 
@@ -87,18 +84,31 @@ JOB_CRITERIA = {
         "Institutional Client Services",
         "Client Coverage",
         "Client Management",
+        "Client Services",
+        "Investor Relations",
+        "Client Solutions",
+        "Client Director",
     ],
-    # Secondary keywords — broaden the net for adjacent roles
+    # Secondary keywords — broader net for adjacent / ambiguously titled roles
     "role_keywords_secondary": [
         "Business Development",
-        "Client Solutions",
         "Institutional Sales",
         "Distribution",
         "Client Engagement",
         "Investment Consultant",
-        "Client Director",
+        "Account Manager",
+        "Account Management",
+        "Sales Manager",
+        "Coverage",
+        "Institutional",
+        "Fund Distribution",
+        "Wholesale",
+        "Intermediary",
+        "Sales Associate",
+        "Associate",       # catches "Associate, Relationship Management" etc.
+        "Relationship",    # catches "Relationship" in broader sales/RM team titles
     ],
-    # Must appear somewhere in description (industry filter)
+    # Industry filter — at least one must appear in title or description
     "industry_keywords": [
         "asset management",
         "asset manager",
@@ -107,10 +117,15 @@ JOB_CRITERIA = {
         "investment management",
         "investment manager",
         "institutional",
+        "wealth management",
+        "banking",
+        "investment bank",
+        "private bank",
+        "financial services",
     ],
-    # At least one target location must be present
-    "locations": ["Singapore", "Sydney", "Australia", "NSW", "SG"],
-    # Seniority filter: titles or levels to INCLUDE
+    # Target locations
+    "locations": ["London", "United Kingdom", "UK", "England", "City of London", "Canary Wharf"],
+    # Seniority to INCLUDE
     "seniority_include": [
         "associate",
         "analyst",
@@ -120,21 +135,25 @@ JOB_CRITERIA = {
         "manager",
         "senior manager",
         "vice president",
+        "vp",
+        "director",          # include director level — common AM band
     ],
-    # Seniority filter: titles to EXCLUDE (too senior)
+    # Seniority to EXCLUDE (too senior / irrelevant)
     "seniority_exclude": [
         "managing director",
         "md",
-        "executive director",
-        "head of",
         "chief",
         "ceo",
         "coo",
+        "cfo",
+        "cio",
         "partner",
-        "principal",
+        "graduate",
+        "intern",
+        "internship",
     ],
-    # Minimum relevance score to surface a job (0.0–1.0)
-    "min_score_threshold": 0.45,
+    # Minimum relevance score to surface a job (relaxed)
+    "min_score_threshold": 0.35,
 }
 
 # ---------------------------------------------------------------------------
@@ -144,26 +163,26 @@ JOB_CRITERIA = {
 JOB_SOURCES = {
     "efinancialcareers": {
         "enabled": True,
-        "base_url": "https://www.efinancialcareers.com",
-        "search_url": "https://www.efinancialcareers.com/search",
-        "description": "Primary source for institutional AM roles globally",
-        "locations": ["Singapore", "Sydney"],
+        "base_url": "https://www.efinancialcareers.co.uk",
+        "search_url": "https://www.efinancialcareers.co.uk/search",
+        "description": "Primary source for institutional AM / banking roles in London",
+        "locations": ["London"],
         "keywords": ["relationship manager", "institutional client", "asset management"],
     },
-    "seek": {
+    "reed": {
         "enabled": True,
-        "base_url": "https://www.seek.com.au",
-        "search_url": "https://www.seek.com.au/jobs",
-        "description": "Primary Australian job board",
-        "locations": ["Sydney NSW"],
+        "base_url": "https://www.reed.co.uk",
+        "search_url": "https://www.reed.co.uk/jobs",
+        "description": "UK's largest job board — broad London coverage",
+        "locations": ["London"],
         "keywords": ["relationship manager", "asset management", "institutional"],
     },
-    "jobsdb": {
+    "totaljobs": {
         "enabled": True,
-        "base_url": "https://sg.jobsdb.com",
-        "search_url": "https://sg.jobsdb.com/jobs",
-        "description": "Primary Singapore job board",
-        "locations": ["Singapore"],
+        "base_url": "https://www.totaljobs.com",
+        "search_url": "https://www.totaljobs.com/jobs",
+        "description": "Major UK job board",
+        "locations": ["London"],
         "keywords": ["relationship manager", "asset management", "institutional"],
     },
     "linkedin": {
@@ -171,25 +190,69 @@ JOB_SOURCES = {
         "base_url": "https://www.linkedin.com",
         "search_url": "https://www.linkedin.com/jobs/search",
         "description": "LinkedIn Jobs — broad coverage",
-        "locations": ["Singapore", "Sydney, New South Wales, Australia"],
+        "locations": ["London, United Kingdom"],
         "keywords": ["institutional relationship manager", "client relationship asset management"],
     },
-    "cfa_institute": {
+    "company_sites": {
         "enabled": True,
-        "base_url": "https://www.cfainstitute.org",
-        "search_url": "https://careers.cfainstitute.org/jobs",
-        "description": "CFA Institute career board — finance-specific",
-        "locations": ["Singapore", "Sydney"],
-        "keywords": ["relationship manager", "client management"],
+        "description": "Direct scraping of SIMA member firm career pages for London roles",
     },
 }
+
+# ---------------------------------------------------------------------------
+# SIMA MEMBER FIRMS — career page URLs for London scraping
+# ---------------------------------------------------------------------------
+# These are global asset managers that are Singapore IM Association members
+# but all have significant London offices / European operations.
+
+SIMA_COMPANY_CAREERS = [
+    # Firm name, careers page URL, ATS hint
+    ("Aberdeen Investments", "https://careers.aberdeengroup.com/search?q=relationship+manager&location=London", "workday"),
+    ("AllianceBernstein", "https://careers.alliancebernstein.com/search/?q=relationship+manager&locationsearch=London", "workday"),
+    ("Allianz Global Investors", "https://www.allianzgi.com/en/careers", "generic"),
+    ("Amundi", "https://jobs.amundi.com/search/?q=relationship+manager&locationsearch=London", "workday"),
+    ("AXA Investment Managers", "https://careers.axa-im.com/search/?q=relationship&locationsearch=London", "workday"),
+    ("BlackRock", "https://careers.blackrock.com/job-search-results/?keyword=relationship+manager&location=London&country=United+Kingdom", "workday"),
+    ("BNP Paribas Asset Management", "https://group.bnpparibas/en/careers/job-offers?location=London", "generic"),
+    ("BNY Mellon Investment Management", "https://bnymellon.eightfold.ai/careers?query=relationship+manager&location=London", "generic"),
+    ("Capital Group", "https://careers.capitalgroup.com/search/?q=relationship&locationsearch=London", "workday"),
+    ("DWS", "https://careers.dws.com/search/?q=relationship+manager&locationsearch=London", "workday"),
+    ("Eastspring Investments", "https://www.eastspring.com/about-us/careers", "generic"),
+    ("Federated Hermes", "https://www.hermes-investment.com/ukw/about-us/careers/", "generic"),
+    ("FIL Investment Management", "https://jobs.fil.com/search/?q=relationship&locationsearch=London", "workday"),
+    ("First Sentier Investors", "https://www.firstsentierinvestors.com/uk/en/individual/about-us/careers.html", "generic"),
+    ("Goldman Sachs Asset Management", "https://www.goldmansachs.com/careers/search#q=asset+management&location=London", "generic"),
+    ("HSBC Global Asset Management", "https://www.hsbc.com/careers/jobs?q=relationship+manager&location=London", "generic"),
+    ("Invesco", "https://careers.invesco.com/search/?q=relationship+manager&locationsearch=London", "workday"),
+    ("Janus Henderson Investors", "https://careers.janushenderson.com/search/?q=relationship&locationsearch=London", "workday"),
+    ("JPMorgan Asset Management", "https://careers.jpmorgan.com/us/en/jobs/search?q=relationship+manager&location=London", "workday"),
+    ("Lazard Asset Management", "https://lazard.wd1.myworkdayjobs.com/en-US/LazardCareers/jobs?q=relationship&locations=London", "workday"),
+    ("M&G Investments", "https://careers.mandg.com/search/?q=relationship+manager&locationsearch=London", "workday"),
+    ("Manulife Investment Management", "https://manulife.wd3.myworkdayjobs.com/en-US/manulife_careers/jobs?q=relationship&locations=London", "workday"),
+    ("Morgan Stanley Investment Management", "https://www.morganstanley.com/careers/career-opportunities-search#q=relationship+manager&location=London", "generic"),
+    ("Neuberger Berman", "https://www.nb.com/pages/public/en-us/about-us/careers.aspx", "generic"),
+    ("Ninety One", "https://www.ninetyone.com/en/about-us/careers", "generic"),
+    ("Nordea Asset Management", "https://www.nordea.com/en/careers", "generic"),
+    ("PGIM", "https://pgim.wd1.myworkdayjobs.com/en-US/pgim/jobs?q=relationship&locations=London", "workday"),
+    ("Pictet Asset Management", "https://careers.group.pictet/search/?q=relationship&locationsearch=London", "workday"),
+    ("PIMCO", "https://pimco.wd1.myworkdayjobs.com/en-US/PIMCO_Careers/jobs?q=relationship&locations=London", "workday"),
+    ("Principal Asset Management", "https://careers.principal.com/search/?q=relationship&locationsearch=London", "workday"),
+    ("Robeco", "https://careers.robeco.com/vacancies/?query=relationship+manager&location=London", "generic"),
+    ("Schroders", "https://www.schroders.com/en/global/individual/our-firm/careers/", "generic"),
+    ("State Street Global Advisors", "https://statestreet.wd1.myworkdayjobs.com/en-US/External/jobs?q=relationship&locations=London", "workday"),
+    ("T. Rowe Price", "https://troweprice.wd5.myworkdayjobs.com/en-US/TRP_Careers/jobs?q=relationship&locations=London", "workday"),
+    ("UBS Asset Management", "https://jobs.ubs.com/TGWebHost/home.aspx?partnerid=25008", "generic"),
+    ("Wellington Management", "https://wellington.wd5.myworkdayjobs.com/en-US/Wellington_Careers/jobs?q=relationship&locations=London", "workday"),
+    ("Western Asset Management", "https://jobs.westernasset.com/search/?q=relationship&locationsearch=London", "workday"),
+    ("Vontobel", "https://www.vontobel.com/en/careers/", "generic"),
+    ("William Blair", "https://williamblair.wd1.myworkdayjobs.com/en-US/WilliamBlair/jobs?q=relationship&locations=London", "workday"),
+]
 
 # ---------------------------------------------------------------------------
 # EVENT MATCHING CRITERIA
 # ---------------------------------------------------------------------------
 
 EVENT_CRITERIA = {
-    # Event types to actively track
     "types_include": [
         "networking",
         "panel",
@@ -201,7 +264,7 @@ EVENT_CRITERIA = {
         "webinar",
         "workshop",
     ],
-    # Theme keywords — events must relate to one of these
+    # Theme keywords — event must relate to at least one
     "theme_keywords": [
         # Industry / product
         "asset management",
@@ -215,25 +278,31 @@ EVENT_CRITERIA = {
         "alternatives",
         "multi-asset",
         "public markets",
+        "fixed income",
+        "equities",
+        "hedge fund",
         # Functional / strategic
-        "client trends",
-        "product trends",
+        "client relations",
         "distribution",
         "investor relations",
         "wealth management",
         "endowment",
         "sovereign wealth",
         "pension",
-        "superannuation",
+        "banking",
+        "financial services",
+        "capital markets",
+        "securities",
         # Geo focus
-        "Asia Pacific",
-        "APAC",
-        "Australia",
-        "Singapore",
+        "London",
+        "United Kingdom",
+        "UK",
+        "EMEA",
+        "Europe",
     ],
-    "locations": ["Singapore", "Sydney", "Australia", "Online", "Virtual", "APAC"],
-    # Minimum relevance score to surface an event
-    "min_score_threshold": 0.40,
+    "locations": ["London", "United Kingdom", "UK", "Online", "Virtual", "EMEA"],
+    # Minimum relevance score
+    "min_score_threshold": 0.35,
 }
 
 # ---------------------------------------------------------------------------
@@ -241,76 +310,52 @@ EVENT_CRITERIA = {
 # ---------------------------------------------------------------------------
 
 EVENT_SOURCES = {
-    "cfa_singapore": {
+    "cfa_uk": {
         "enabled": True,
-        "url": "https://cfasingapore.org.sg/events/",
-        "description": "CFA Society Singapore — premier networking for AM professionals",
-        "location": "Singapore",
+        "url": "https://www.cfauk.org/events",
+        "description": "CFA Society UK — premier networking for AM professionals in London",
+        "location": "London",
     },
-    "cfa_australia": {
+    "investment_association": {
         "enabled": True,
-        "url": "https://www.cfasociety.org/sydney/Pages/Events.aspx",
-        "description": "CFA Society Sydney — AM networking and CPD",
-        "location": "Sydney",
-    },
-    "caia": {
-        "enabled": True,
-        "url": "https://caia.org/events",
-        "description": "CAIA Association — alternatives / private markets focus",
-        "location": "Global/APAC",
+        "url": "https://www.theia.org/events",
+        "description": "Investment Association — UK asset management industry body events",
+        "location": "London",
     },
     "aima": {
         "enabled": True,
         "url": "https://www.aima.org/events.html",
-        "description": "AIMA — alternatives and hedge fund industry",
-        "location": "Singapore/Global",
+        "description": "AIMA — alternatives and hedge fund industry events",
+        "location": "London/Global",
     },
-    "conexus": {
+    "pimfa": {
         "enabled": True,
-        "url": "https://conexusfinancial.com.au/events/",
-        "description": "Conexus Financial — institutional investment events in Australia",
-        "location": "Sydney",
+        "url": "https://www.pimfa.co.uk/events/",
+        "description": "PIMFA — Personal Investment Management & Financial Advice Association",
+        "location": "London",
     },
-    "investment_magazine": {
+    "aic": {
         "enabled": True,
-        "url": "https://investmentmagazine.com.au/events/",
-        "description": "Investment Magazine — Australian institutional AM events",
-        "location": "Sydney",
+        "url": "https://www.theaic.co.uk/events",
+        "description": "Association of Investment Companies — London events",
+        "location": "London",
     },
-    "asian_investor": {
+    "institutional_investor": {
         "enabled": True,
-        "url": "https://www.asianinvestor.net/events",
-        "description": "AsianInvestor — institutional AM events across Asia",
-        "location": "Singapore/APAC",
+        "url": "https://www.institutionalinvestor.com/events",
+        "description": "Institutional Investor — global AM conferences, London focus",
+        "location": "London/Global",
     },
-    "asifma": {
+    "caia_uk": {
         "enabled": True,
-        "url": "https://www.asifma.org/events/",
-        "description": "ASIFMA — Asia financial markets association events",
-        "location": "Singapore",
+        "url": "https://caia.org/events",
+        "description": "CAIA — alternatives / private markets, filter for London/UK",
+        "location": "London/Global",
     },
-    "fiduciary_investors": {
+    "eventbrite_london": {
         "enabled": True,
-        "url": "https://fiduciaryinvestors.com.au/symposium/",
-        "description": "Fiduciary Investors Symposium — top-tier Australian pension/AM event",
-        "location": "Sydney",
-    },
-    "pere": {
-        "enabled": True,
-        "url": "https://www.perenews.com/events/",
-        "description": "PERE — private equity real estate conferences",
-        "location": "Global/APAC",
-    },
-    "superreturn": {
-        "enabled": True,
-        "url": "https://informaconnect.com/superreturn-international/",
-        "description": "SuperReturn — private equity and private credit",
-        "location": "Global",
-    },
-    "eventbrite_finance": {
-        "enabled": True,
-        "url": "https://www.eventbrite.com",
-        "description": "Eventbrite finance/investment events in target cities",
-        "location": "Singapore/Sydney",
+        "url": "https://www.eventbrite.co.uk",
+        "description": "Eventbrite London finance/investment networking events",
+        "location": "London",
     },
 }

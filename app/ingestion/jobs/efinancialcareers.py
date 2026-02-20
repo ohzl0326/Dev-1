@@ -1,20 +1,18 @@
 """
-eFinancialCareers scraper — best source for institutional AM roles in SG and AU.
-Searches for RM / client management roles in Singapore and Sydney.
+eFinancialCareers scraper — best source for institutional AM / banking roles in London.
+Searches for RM / client management / sales roles across asset management and banking.
 """
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timedelta
 from typing import Optional
 from urllib.parse import urljoin
 
-from app.config import JOB_SOURCES
 from app.ingestion.base_scraper import BaseJobScraper, ScrapedJob
 
 logger = logging.getLogger(__name__)
 
-SOURCE = JOB_SOURCES["efinancialcareers"]
-BASE_URL = SOURCE["base_url"]
+BASE_URL = "https://www.efinancialcareers.co.uk"
 
 
 class EFinancialCareersScraper(BaseJobScraper):
@@ -23,23 +21,38 @@ class EFinancialCareersScraper(BaseJobScraper):
     SEARCH_CONFIGS = [
         {
             "keywords": "relationship manager asset management",
-            "location": "Singapore",
-            "locationId": "242",  # Singapore location ID
+            "location": "London",
+            "locationId": "9",  # London, UK on eFC
         },
         {
-            "keywords": "institutional client manager asset management",
-            "location": "Singapore",
-            "locationId": "242",
+            "keywords": "institutional client manager",
+            "location": "London",
+            "locationId": "9",
         },
         {
-            "keywords": "relationship manager asset management",
-            "location": "Sydney",
-            "locationId": "36",  # Sydney location ID
+            "keywords": "client relationship manager investment management",
+            "location": "London",
+            "locationId": "9",
         },
         {
-            "keywords": "institutional client services asset management",
-            "location": "Sydney",
-            "locationId": "36",
+            "keywords": "institutional sales asset management",
+            "location": "London",
+            "locationId": "9",
+        },
+        {
+            "keywords": "business development asset management",
+            "location": "London",
+            "locationId": "9",
+        },
+        {
+            "keywords": "fund distribution relationship manager",
+            "location": "London",
+            "locationId": "9",
+        },
+        {
+            "keywords": "client services institutional investment",
+            "location": "London",
+            "locationId": "9",
         },
     ]
 
@@ -154,7 +167,7 @@ class EFinancialCareersScraper(BaseJobScraper):
     def _parse_salary(self, text: str) -> tuple[Optional[int], Optional[int], Optional[str]]:
         if not text:
             return None, None, None
-        currency = "SGD" if "S$" in text or "SGD" in text else "AUD" if "A$" in text or "AUD" in text else "USD"
+        currency = "GBP" if "£" in text or "GBP" in text else "USD"
         numbers = re.findall(r"[\d,]+", text.replace(",", ""))
         cleaned = [int(n.replace(",", "")) for n in numbers if len(n) >= 4]
         if len(cleaned) >= 2:
@@ -177,10 +190,8 @@ class EFinancialCareersScraper(BaseJobScraper):
         if "today" in text_lower or "just now" in text_lower:
             return now
         if "yesterday" in text_lower:
-            from datetime import timedelta
             return now - timedelta(days=1)
         m = re.search(r"(\d+)\s+day", text_lower)
         if m:
-            from datetime import timedelta
             return now - timedelta(days=int(m.group(1)))
         return None

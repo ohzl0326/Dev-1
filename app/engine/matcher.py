@@ -8,14 +8,14 @@ Scoring approach:
 
 Job scoring weights:
   title_match    0.35  — role title is the strongest signal
-  industry       0.25  — must be AM / fund management
-  location       0.20  — Singapore or Sydney
-  seniority      0.15  — associate to VP level
+  industry       0.20  — must be AM / banking / financial services
+  location       0.25  — London is the target (high weight)
+  seniority      0.15  — associate to director level
   description    0.05  — secondary keyword match in body
 
 Event scoring weights:
-  theme          0.45  — topic relevance to institutional AM
-  location       0.30  — Singapore or Sydney
+  theme          0.40  — topic relevance to institutional AM / banking
+  location       0.35  — London-first (higher weight than before)
   event_type     0.15  — networking / panel > webinar
   organiser      0.10  — known high-value organisers get a boost
 """
@@ -33,11 +33,10 @@ from app.ingestion.base_scraper import ScrapedJob, ScrapedEvent
 class JobScorer:
     """Score a ScrapedJob against the user's job criteria."""
 
-    # Weights must sum to 1.0
     WEIGHTS = {
         "title": 0.35,
-        "industry": 0.25,
-        "location": 0.20,
+        "industry": 0.20,
+        "location": 0.25,
         "seniority": 0.15,
         "description": 0.05,
     }
@@ -65,10 +64,13 @@ class JobScorer:
         for kw in JOB_CRITERIA["role_keywords_secondary"]:
             if kw.lower() in tl:
                 return 0.6
-        # Partial: any single important word
-        important_words = ["relationship", "institutional", "client", "distribution"]
-        if any(w in tl for w in important_words):
-            return 0.3
+        # Partial: any single important word that suggests the right function
+        partial_words = [
+            "relationship", "institutional", "client", "distribution",
+            "coverage", "sales", "wholesale", "intermediary",
+        ]
+        if any(w in tl for w in partial_words):
+            return 0.35
         return 0.0
 
     def _score_industry(self, title: str, description: str) -> float:
@@ -80,21 +82,27 @@ class JobScorer:
             return 0.8
         if matches == 1:
             return 0.5
-        return 0.0
+        # If no explicit industry keyword but job is from a company careers scraper,
+        # give a neutral score rather than zero (company already filtered by sector)
+        return 0.2
 
     def _score_location(self, location: str) -> float:
         loc_lower = location.lower()
+        # Exact London targets
         for target in JOB_CRITERIA["locations"]:
             if target.lower() in loc_lower:
                 return 1.0
-        # Partial: region match
-        if any(r in loc_lower for r in ["asia", "apac", "sea", "australia"]):
-            return 0.5
+        # UK outside London — still useful, partial credit
+        if any(r in loc_lower for r in ["united kingdom", "uk", "england", "britain", "gb"]):
+            return 0.7
+        # EMEA / Europe — remote possibility
+        if any(r in loc_lower for r in ["europe", "emea", "remote"]):
+            return 0.4
         return 0.0
 
     def _score_seniority(self, title: str) -> float:
         tl = title.lower()
-        # Hard exclude: too senior
+        # Hard exclude
         for excl in JOB_CRITERIA["seniority_exclude"]:
             if excl in tl:
                 return 0.0
@@ -102,19 +110,19 @@ class JobScorer:
         for incl in JOB_CRITERIA["seniority_include"]:
             if incl in tl:
                 return 1.0
-        # Ambiguous title (no seniority signal) — neutral, don't penalise
+        # No seniority signal — neutral, don't penalise (many AM jobs omit levels)
         return 0.7
 
     def _score_description(self, description: str) -> float:
         if not description:
-            return 0.5  # neutral: no info
+            return 0.4  # neutral: no info
         desc_lower = description.lower()
-        # Look for positive signals
         positive = [
             "institutional", "asset management", "client relationship",
             "fund", "investment", "aum", "mandate", "portfolio",
             "private markets", "private equity", "alternatives",
-            "singapore", "sydney", "apac",
+            "london", "uk", "banking", "financial services",
+            "wealth management", "relationship management",
         ]
         matches = sum(1 for kw in positive if kw in desc_lower)
         return min(matches / 5.0, 1.0)
@@ -139,27 +147,29 @@ class EventScorer:
     """Score a ScrapedEvent against the user's event criteria."""
 
     WEIGHTS = {
-        "theme": 0.45,
-        "location": 0.30,
+        "theme": 0.40,
+        "location": 0.35,
         "event_type": 0.15,
         "organiser": 0.10,
     }
 
-    # Known high-value organisers get a full organiser score
+    # Known high-value London AM/banking organisers
     HIGH_VALUE_ORGANISERS = {
-        "cfa society singapore", "cfa singapore",
-        "cfa society sydney", "cfa australia",
-        "caia", "caia association",
+        "cfa society uk", "cfa uk",
+        "investment association", "the ia",
         "aima",
-        "conexus financial", "conexus",
-        "fiduciary investors",
-        "investment magazine",
-        "asianinvestor", "asian investor",
-        "asifma",
+        "caia", "caia association",
+        "pimfa",
+        "aic", "association of investment companies",
+        "institutional investor",
         "pere", "superreturn",
+        "city of london",
+        "financial times", "ft",
+        "bloomberg",
+        "the economist",
+        "ipe", "investment & pensions europe",
     }
 
-    # Event types ranked by networking/career value
     TYPE_SCORES = {
         "networking": 1.0,
         "roundtable": 0.95,
@@ -177,7 +187,7 @@ class EventScorer:
     def score(self, event: ScrapedEvent) -> tuple[float, float]:
         """Return (final_score, networking_value)."""
         theme_score = self._score_theme(event.name, event.description, event.themes or [])
-        location_score = self._score_location(event.city, event.is_online)
+        location_score = self._score_location(event.city, event.location, event.is_online)
         type_score = self.TYPE_SCORES.get(event.event_type or "other", 0.3)
         organiser_score = self._score_organiser(event.organiser, event.source)
 
@@ -207,18 +217,20 @@ class EventScorer:
             return 0.40
         return 0.0
 
-    def _score_location(self, city: str, is_online: bool) -> float:
-        if not city:
-            return 0.3
-        city_lower = city.lower()
-        if "singapore" in city_lower:
+    def _score_location(self, city: str, location: str, is_online: bool) -> float:
+        combined = ((city or "") + " " + (location or "")).lower()
+        # London is the target — full score
+        if "london" in combined:
             return 1.0
-        if "sydney" in city_lower or "australia" in city_lower:
-            return 1.0
-        if is_online or "online" in city_lower or "virtual" in city_lower:
-            return 0.6  # Online events still valuable but less network value
-        if "apac" in city_lower or "asia" in city_lower:
-            return 0.7
+        # Wider UK
+        if any(w in combined for w in ["united kingdom", " uk", "england", "britain"]):
+            return 0.75
+        # EMEA / Europe — relevant but not primary
+        if any(w in combined for w in ["europe", "emea"]):
+            return 0.5
+        # Online events — still valuable for content/networking
+        if is_online or any(w in combined for w in ["online", "virtual"]):
+            return 0.5
         return 0.1
 
     def _score_organiser(self, organiser: str, source: str) -> float:
@@ -226,7 +238,7 @@ class EventScorer:
         for hvo in self.HIGH_VALUE_ORGANISERS:
             if hvo in check:
                 return 1.0
-        return 0.4  # Unknown organiser — neutral rather than zero
+        return 0.4  # Unknown organiser — neutral
 
 
 # ---------------------------------------------------------------------------
