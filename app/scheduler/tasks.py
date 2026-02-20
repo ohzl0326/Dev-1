@@ -188,6 +188,8 @@ async def _scrape_events_async():
         InstitutionalInvestorScraper,
         AIMALondonScraper,
         EventbriteLondonScraper,
+        LumaLondonScraper,
+        MeetupLondonScraper,
     )
     from app.engine.matcher import score_event
     from app.config import EVENT_CRITERIA
@@ -202,7 +204,9 @@ async def _scrape_events_async():
         AICScraper(),                     # Association of Investment Companies
         InstitutionalInvestorScraper(),   # Institutional Investor (global, filter London)
         AIMALondonScraper(),              # AIMA — alternatives, filter London
-        EventbriteLondonScraper(),        # Eventbrite London finance events
+        EventbriteLondonScraper(),        # Eventbrite London (JSON-LD + varied queries)
+        LumaLondonScraper(),              # Lu.ma London finance networking
+        MeetupLondonScraper(),            # Meetup London finance/investment groups
     ]
 
     all_events = []
