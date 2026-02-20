@@ -78,9 +78,10 @@ def scrape_all_jobs(self):
 
 async def _scrape_jobs_async():
     from app.ingestion.jobs.efinancialcareers import EFinancialCareersScraper
-    from app.ingestion.jobs.seek import SeekScraper
-    from app.ingestion.jobs.jobsdb import JobsDBScraper
+    from app.ingestion.jobs.seek import SeekScraper          # now Reed.co.uk
+    from app.ingestion.jobs.jobsdb import JobsDBScraper      # now Totaljobs.com
     from app.ingestion.jobs.linkedin import LinkedInScraper
+    from app.ingestion.jobs.company_sites import CompanySitesScraper
     from app.engine.matcher import score_job
     from app.config import JOB_CRITERIA
     from app.database import AsyncSessionLocal
@@ -88,10 +89,11 @@ async def _scrape_jobs_async():
     from sqlalchemy import select
 
     scrapers = [
-        EFinancialCareersScraper(),
-        SeekScraper(),
-        JobsDBScraper(),
-        LinkedInScraper(),
+        EFinancialCareersScraper(),   # eFinancialCareers London
+        SeekScraper(),                # Reed.co.uk London
+        JobsDBScraper(),              # Totaljobs.com London
+        LinkedInScraper(),            # LinkedIn London
+        CompanySitesScraper(),        # SIMA member firm career pages
     ]
 
     all_jobs = []
@@ -168,12 +170,15 @@ def scrape_all_events(self):
 
 
 async def _scrape_events_async():
-    from app.ingestion.events.cfa import CFASingaporeScraper, CFASydneyScraper
-    from app.ingestion.events.industry import (
-        ConexusScraper, AsianInvestorScraper, AIMAEventScraper,
-        CAIAScraper, FiduciaryInvestorsScraper, InvestmentMagazineScraper,
+    from app.ingestion.events.london import (
+        CFAUKScraper,
+        InvestmentAssociationScraper,
+        PIMFAScraper,
+        AICScraper,
+        InstitutionalInvestorScraper,
+        AIMALondonScraper,
+        EventbriteLondonScraper,
     )
-    from app.ingestion.events.eventbrite import EventbriteScraper
     from app.engine.matcher import score_event
     from app.config import EVENT_CRITERIA
     from app.database import AsyncSessionLocal
@@ -181,15 +186,13 @@ async def _scrape_events_async():
     from sqlalchemy import select
 
     scrapers = [
-        CFASingaporeScraper(),
-        CFASydneyScraper(),
-        ConexusScraper(),
-        AsianInvestorScraper(),
-        AIMAEventScraper(),
-        CAIAScraper(),
-        FiduciaryInvestorsScraper(),
-        InvestmentMagazineScraper(),
-        EventbriteScraper(),
+        CFAUKScraper(),                   # CFA Society UK — London
+        InvestmentAssociationScraper(),   # The IA — UK AM industry body
+        PIMFAScraper(),                   # PIMFA — wealth management
+        AICScraper(),                     # Association of Investment Companies
+        InstitutionalInvestorScraper(),   # Institutional Investor (global, filter London)
+        AIMALondonScraper(),              # AIMA — alternatives, filter London
+        EventbriteLondonScraper(),        # Eventbrite London finance events
     ]
 
     all_events = []

@@ -75,6 +75,7 @@ class ScrapedEvent:
         registration_deadline: Optional[datetime] = None,
         is_free: Optional[bool] = None,
         cost: Optional[str] = None,
+        themes: Optional[list] = None,
     ):
         self.name = name.strip()
         self.url = url.strip()
@@ -91,6 +92,7 @@ class ScrapedEvent:
         self.registration_deadline = registration_deadline
         self.is_free = is_free
         self.cost = cost
+        self.themes = themes or []
 
     @property
     def fingerprint(self) -> str:
