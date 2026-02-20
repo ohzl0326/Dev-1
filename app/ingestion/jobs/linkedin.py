@@ -20,40 +20,30 @@ class LinkedInScraper(BaseJobScraper):
 
     # LinkedIn geo IDs
     GEO_IDS = {
-        "London": "90009496",            # Greater London, England, UK
-        "United Kingdom": "101165590",   # United Kingdom (fallback)
+        "Singapore": "102454443",
+        "Sydney": "105995770",
     }
 
     SEARCH_CONFIGS = [
         {
             "keywords": "Institutional Relationship Manager Asset Management",
-            "geo_id": GEO_IDS["London"],
-            "location_name": "London",
+            "geo_id": GEO_IDS["Singapore"],
+            "location_name": "Singapore",
+        },
+        {
+            "keywords": "Relationship Manager Institutional Asset Management",
+            "geo_id": GEO_IDS["Singapore"],
+            "location_name": "Singapore",
+        },
+        {
+            "keywords": "Institutional Relationship Manager Asset Management",
+            "geo_id": GEO_IDS["Sydney"],
+            "location_name": "Sydney",
         },
         {
             "keywords": "Client Relationship Manager Fund Management",
-            "geo_id": GEO_IDS["London"],
-            "location_name": "London",
-        },
-        {
-            "keywords": "Institutional Sales Asset Management",
-            "geo_id": GEO_IDS["London"],
-            "location_name": "London",
-        },
-        {
-            "keywords": "Business Development Investment Management",
-            "geo_id": GEO_IDS["London"],
-            "location_name": "London",
-        },
-        {
-            "keywords": "Associate Relationship Management Asset Manager",
-            "geo_id": GEO_IDS["London"],
-            "location_name": "London",
-        },
-        {
-            "keywords": "Client Coverage Investment Banking London",
-            "geo_id": GEO_IDS["London"],
-            "location_name": "London",
+            "geo_id": GEO_IDS["Sydney"],
+            "location_name": "Sydney",
         },
     ]
 
@@ -81,10 +71,9 @@ class LinkedInScraper(BaseJobScraper):
         url = f"{BASE_URL}/jobs/search/"
         params = {
             "keywords": config["keywords"],
-            "location": "London, England, United Kingdom",  # text + geoId together
             "geoId": config["geo_id"],
             "f_E": self.EXPERIENCE_LEVELS,
-            "f_TPR": "r2592000",  # Last 30 days (was 7 — too narrow)
+            "f_TPR": "r2592000",  # Last 30 days
             "position": 1,
             "pageNum": 0,
             "start": 0,
@@ -152,13 +141,6 @@ class LinkedInScraper(BaseJobScraper):
                 ".base-search-card__metadata span"
             )
             location = loc_el.get_text(strip=True) if loc_el else location_hint
-
-            # Reject non-London results that slip through geo filtering
-            loc_lower = location.lower()
-            non_london = ["singapore", "sydney", "hong kong", "dubai", "new york",
-                          "tokyo", "frankfurt", "paris", "amsterdam"]
-            if any(city in loc_lower for city in non_london):
-                return None
 
             # Date
             date_el = card.select_one("time")

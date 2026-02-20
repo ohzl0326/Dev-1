@@ -114,25 +114,10 @@ async def _scrape_jobs_async():
             logger.error(f"[tasks] Scraper {Scraper.__class__.__name__} failed: {e}")
 
     # Score and persist
-    LONDON_SIGNALS = ["london", "united kingdom", " uk", "england", "canary wharf", "city of london"]
-    NON_LONDON = ["singapore", "sydney", "hong kong", "dubai", "new york",
-                  "tokyo", "frankfurt", "paris", "amsterdam", "southeast asia", "sea,"]
-
     new_count = 0
     try:
         async with _Session() as session:
             for scraped in all_jobs:
-                # Hard location gate — drop anything clearly not London
-                loc = scraped.location.lower()
-                if any(city in loc for city in NON_LONDON):
-                    logger.debug(f"[tasks] Dropping non-London job: {scraped.title} ({scraped.location})")
-                    continue
-                if not any(sig in loc for sig in LONDON_SIGNALS):
-                    # No London signal at all — only keep if from company_sites (already pre-filtered)
-                    if scraped.source != "company_sites":
-                        logger.debug(f"[tasks] Dropping no-London-signal job: {scraped.title} ({scraped.location})")
-                        continue
-
                 score, breakdown = score_job(scraped)
                 if score < JOB_CRITERIA["min_score_threshold"]:
                     continue  # Below threshold — skip
