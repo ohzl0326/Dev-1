@@ -4,7 +4,7 @@ Searches for RM / client management / sales roles across asset management and ba
 """
 import logging
 import re
-from datetime import datetime, timedelta, timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 from urllib.parse import urljoin
 

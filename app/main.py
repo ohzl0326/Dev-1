@@ -44,7 +44,7 @@ app = FastAPI(
     title="Career Tracker",
     description=(
         "Personal job, event and networking tracker for Asset Management "
-        "roles in Singapore and Sydney. Q3 2026 deadline."
+        "and Banking roles in London. Q3 2026 deadline."
     ),
     version="1.0.0",
     lifespan=lifespan,
