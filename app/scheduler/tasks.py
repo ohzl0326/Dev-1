@@ -84,9 +84,16 @@ async def _scrape_jobs_async():
     from app.ingestion.jobs.company_sites import CompanySitesScraper
     from app.engine.matcher import score_job
     from app.config import JOB_CRITERIA
-    from app.database import AsyncSessionLocal
     from app.models.job import Job, JobStatus
     from sqlalchemy import select
+    from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+    from app.config import settings
+
+    # Create a fresh engine bound to the current event loop.
+    # The module-level engine in database.py can be attached to a stale loop
+    # from a previous Celery task, causing "Future attached to a different loop".
+    _engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+    _Session = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
 
     scrapers = [
         EFinancialCareersScraper(),   # eFinancialCareers London
@@ -112,62 +119,65 @@ async def _scrape_jobs_async():
                   "tokyo", "frankfurt", "paris", "amsterdam", "southeast asia", "sea,"]
 
     new_count = 0
-    async with AsyncSessionLocal() as session:
-        for scraped in all_jobs:
-            # Hard location gate — drop anything clearly not London
-            loc = scraped.location.lower()
-            if any(city in loc for city in NON_LONDON):
-                logger.debug(f"[tasks] Dropping non-London job: {scraped.title} ({scraped.location})")
-                continue
-            if not any(sig in loc for sig in LONDON_SIGNALS):
-                # No London signal at all — only keep if from company_sites (already pre-filtered)
-                if scraped.source != "company_sites":
-                    logger.debug(f"[tasks] Dropping no-London-signal job: {scraped.title} ({scraped.location})")
+    try:
+        async with _Session() as session:
+            for scraped in all_jobs:
+                # Hard location gate — drop anything clearly not London
+                loc = scraped.location.lower()
+                if any(city in loc for city in NON_LONDON):
+                    logger.debug(f"[tasks] Dropping non-London job: {scraped.title} ({scraped.location})")
                     continue
+                if not any(sig in loc for sig in LONDON_SIGNALS):
+                    # No London signal at all — only keep if from company_sites (already pre-filtered)
+                    if scraped.source != "company_sites":
+                        logger.debug(f"[tasks] Dropping no-London-signal job: {scraped.title} ({scraped.location})")
+                        continue
 
-            score, breakdown = score_job(scraped)
-            if score < JOB_CRITERIA["min_score_threshold"]:
-                continue  # Below threshold — skip
+                score, breakdown = score_job(scraped)
+                if score < JOB_CRITERIA["min_score_threshold"]:
+                    continue  # Below threshold — skip
 
-            # Deduplicate by URL
-            existing = await session.execute(
-                select(Job).where(Job.url == scraped.url)
-            )
-            existing_job = existing.scalar_one_or_none()
-
-            if existing_job:
-                # Update score and description if changed
-                existing_job.relevance_score = score
-                existing_job.score_breakdown = breakdown
-                if scraped.description and len(scraped.description) > len(existing_job.description or ""):
-                    existing_job.description = scraped.description
-                existing_job.updated_at = datetime.utcnow()
-            else:
-                from app.engine.matcher import job_scorer
-                job = Job(
-                    title=scraped.title,
-                    company=scraped.company,
-                    location=scraped.location,
-                    url=scraped.url,
-                    source=scraped.source,
-                    description=scraped.description,
-                    requirements=scraped.requirements,
-                    salary_min=scraped.salary_min,
-                    salary_max=scraped.salary_max,
-                    salary_currency=scraped.salary_currency,
-                    employment_type=scraped.employment_type,
-                    seniority_level=scraped.seniority_level,
-                    posted_date=scraped.posted_date,
-                    relevance_score=score,
-                    score_breakdown=breakdown,
-                    is_asset_management=breakdown.get("industry", 0) >= 0.5,
-                    market_type=job_scorer.infer_market_type(scraped),
-                    status=JobStatus.NEW,
+                # Deduplicate by URL
+                existing = await session.execute(
+                    select(Job).where(Job.url == scraped.url)
                 )
-                session.add(job)
-                new_count += 1
+                existing_job = existing.scalar_one_or_none()
 
-        await session.commit()
+                if existing_job:
+                    # Update score and description if changed
+                    existing_job.relevance_score = score
+                    existing_job.score_breakdown = breakdown
+                    if scraped.description and len(scraped.description) > len(existing_job.description or ""):
+                        existing_job.description = scraped.description
+                    existing_job.updated_at = datetime.utcnow()
+                else:
+                    from app.engine.matcher import job_scorer
+                    job = Job(
+                        title=scraped.title,
+                        company=scraped.company,
+                        location=scraped.location,
+                        url=scraped.url,
+                        source=scraped.source,
+                        description=scraped.description,
+                        requirements=scraped.requirements,
+                        salary_min=scraped.salary_min,
+                        salary_max=scraped.salary_max,
+                        salary_currency=scraped.salary_currency,
+                        employment_type=scraped.employment_type,
+                        seniority_level=scraped.seniority_level,
+                        posted_date=scraped.posted_date,
+                        relevance_score=score,
+                        score_breakdown=breakdown,
+                        is_asset_management=breakdown.get("industry", 0) >= 0.5,
+                        market_type=job_scorer.infer_market_type(scraped),
+                        status=JobStatus.NEW,
+                    )
+                    session.add(job)
+                    new_count += 1
+
+            await session.commit()
+    finally:
+        await _engine.dispose()
 
     logger.info(f"[tasks] Job scrape complete: {new_count} new jobs added")
     return {"new_jobs": new_count, "total_scraped": len(all_jobs)}
