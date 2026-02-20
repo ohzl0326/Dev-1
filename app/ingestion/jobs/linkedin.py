@@ -81,9 +81,10 @@ class LinkedInScraper(BaseJobScraper):
         url = f"{BASE_URL}/jobs/search/"
         params = {
             "keywords": config["keywords"],
+            "location": "London, England, United Kingdom",  # text + geoId together
             "geoId": config["geo_id"],
-            "f_E": self.EXPERIENCE_LEVELS,  # Experience level filter
-            "f_TPR": "r604800",             # Posted within last 7 days (604800 seconds)
+            "f_E": self.EXPERIENCE_LEVELS,
+            "f_TPR": "r2592000",  # Last 30 days (was 7 — too narrow)
             "position": 1,
             "pageNum": 0,
             "start": 0,
@@ -151,6 +152,13 @@ class LinkedInScraper(BaseJobScraper):
                 ".base-search-card__metadata span"
             )
             location = loc_el.get_text(strip=True) if loc_el else location_hint
+
+            # Reject non-London results that slip through geo filtering
+            loc_lower = location.lower()
+            non_london = ["singapore", "sydney", "hong kong", "dubai", "new york",
+                          "tokyo", "frankfurt", "paris", "amsterdam"]
+            if any(city in loc_lower for city in non_london):
+                return None
 
             # Date
             date_el = card.select_one("time")
